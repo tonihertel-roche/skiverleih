@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Projekt-Dashboard · Web-Programmierung · Skiverleih</title>
+<style>
+  :root {
+    --bg: #f3f6fa; --panel: #fff; --ink: #1c2633; --muted: #667487; --line: #dde3ec;
+    --brand: #1f5fa8; --brand-soft: #e6eef8;
+    --pflicht: #c0392b; --empf: #d68910; --opt: #5d6d7e;
+    --a: #1f7a8c; --b: #8e44ad; --both: #2e7d32;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); }
+  header { background: linear-gradient(120deg, #123c6b, #1f5fa8); color: #fff; padding: 16px 24px 0; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .sub { opacity: .8; font-size: 13px; margin-top: 2px; }
+  .head-row { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; }
+  .team { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .team input { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.12); color: #fff; border-radius: 6px; padding: 5px 8px; width: 130px; }
+  .team .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .head-btns button { background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+  .head-btns button:hover { background: rgba(255,255,255,.28); }
+  nav { display: flex; gap: 4px; margin-top: 14px; overflow-x: auto; }
+  nav button { background: transparent; border: none; color: #cfe0f5; padding: 10px 14px; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  nav button.active { background: var(--bg); color: var(--brand); }
+  main { padding: 20px 24px 40px; max-width: 1600px; margin: 0 auto; }
+  section.tab { display: none; } section.tab.active { display: block; }
+  button { font: inherit; cursor: pointer; border-radius: 6px; padding: 6px 12px; border: 1px solid var(--line); background: #fff; color: var(--ink); }
+  button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  button.danger { color: var(--pflicht); border-color: #f0c4be; }
+  input, select, textarea { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); }
+  textarea { width: 100%; min-height: 80px; resize: vertical; }
+  h2 { font-size: 17px; margin: 0 0 12px; } h3 { font-size: 15px; margin: 0 0 8px; }
+  .grid { display: grid; gap: 16px; }
+  .g4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .g2 { grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .kpi .val { font-size: 26px; font-weight: 700; } .kpi .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi.warn .val { color: var(--pflicht); }
+  .bar { height: 8px; background: #e9eef5; border-radius: 99px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; background: var(--brand); border-radius: 99px; }
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+  .row .name { width: 190px; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .bar { flex: 1; } .row .num { width: 64px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 99px; border: 1px solid; white-space: nowrap; }
+  .p-Pflicht { color: var(--pflicht); border-color: #f0c4be; background: #fdf0ee; }
+  .p-Empfohlen { color: var(--empf); border-color: #f4d9a8; background: #fdf6e8; }
+  .p-Optional { color: var(--opt); border-color: #d5dbe1; background: #f4f6f8; }
+  .who { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 99px; color: #fff; font-size: 11px; font-weight: 700; }
+  .who-a { background: var(--a); } .who-b { background: var(--b); } .who-both { background: var(--both); } .who-none { background: #b6c0cc; }
+
+  /* Kanban */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+  .toolbar input[type=search] { min-width: 220px; flex: 1; max-width: 340px; }
+  .board { display: grid; grid-template-columns: repeat(5, minmax(250px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+  .col { background: #e8edf4; border-radius: var(--radius); padding: 10px; min-height: 300px; display: flex; flex-direction: column; }
+  .col.over { outline: 2px dashed var(--brand); background: var(--brand-soft); }
+  .col-head { display: flex; justify-content: space-between; align-items: center; font-weight: 700; margin: 2px 4px 10px; }
+  .col-head .count { background: #fff; border-radius: 99px; padding: 0 8px; font-size: 12px; color: var(--muted); }
+  .col-body { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .task { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--c, #999); border-radius: 8px; padding: 9px 10px; cursor: grab; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+  .task:hover { box-shadow: 0 3px 10px rgba(0,0,0,.08); }
+  .task.dragging { opacity: .45; }
+  .task .t { font-weight: 600; margin-bottom: 6px; }
+  .task .meta { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; font-size: 11px; }
+  .task .cat { color: var(--c); font-weight: 600; }
+  .task .due { margin-left: auto; color: var(--muted); } .task .due.late { color: var(--pflicht); font-weight: 700; }
+  .add-inline { margin-top: 8px; width: 100%; background: transparent; border: 1px dashed #b9c4d2; color: var(--muted); }
+
+  /* Anforderungen / Infos */
+  details { background: #fff; border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 10px; }
+  summary { padding: 12px 16px; font-weight: 700; cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 10px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "▸"; color: var(--muted); } details[open] summary::after { content: "▾"; }
+  details .inner { padding: 0 16px 14px; }
+  details ul { margin: 6px 0; padding-left: 20px; } details li { margin: 3px 0; }
+  .check { display: flex; gap: 8px; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid #f0f3f7; }
+  .check:last-child { border-bottom: none; }
+  .check input { margin-top: 3px; }
+  .check.done span.txt { text-decoration: line-through; color: var(--muted); }
+  .deadline { display: flex; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f3f7; }
+  .deadline:last-child { border-bottom: none; }
+  .deadline .date { font-weight: 700; width: 120px; flex-shrink: 0; }
+  .deadline .left { margin-left: auto; font-weight: 700; color: var(--brand); white-space: nowrap; }
+  .deadline.soon .left { color: var(--pflicht); }
+  a { color: var(--brand); }
+  code { background: #eef2f7; padding: 1px 5px; border-radius: 4px; }
+
+  /* Zeiterfassung */
+  table { width: 100%; border-collapse: collapse; background: #fff; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .03em; color: var(--muted); }
+  .time-form { display: grid; grid-template-columns: 130px 120px 1fr 170px 90px 1fr auto; gap: 8px; align-items: end; }
+  .time-form label { font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+  .table-wrap { overflow-x: auto; }
+
+  /* Modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(15,25,40,.45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50; }
+  .modal-bg.open { display: flex; }
+  .modal { background: #fff; border-radius: 12px; width: min(640px, 100%); max-height: 92vh; overflow: auto; padding: 20px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-grid label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
+  .form-grid .full { grid-column: 1 / -1; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .modal-actions .spacer { flex: 1; }
+  .hint { background: #fff8e6; border: 1px solid #f4d9a8; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; }
+
+  @media (max-width: 900px) {
+    main { padding: 14px; } header { padding: 14px 14px 0; }
+    .time-form { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+    .g2 { grid-template-columns: 1fr; }
+    .row .name { width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="head-row">
+    <div>
+      <h1>⛷️ Projekt-Dashboard – Ski- &amp; Skizubehörverleih</h1>
+      <div class="sub">Web-Programmierung · 3. Semester · Dozent: Konrad Preiser (konrad@preiser.de)</div>
+    </div>
+    <div class="team">
+      <span class="dot" style="background:var(--a)"></span><input id="nameA" title="Name Person A">
+      <span class="dot" style="background:var(--b)"></span><input id="nameB" title="Name Person B">
+      <span class="head-btns">
+        <button id="btnExport" title="Stand als JSON-Datei speichern (zum Teilen mit dem Teampartner)">⬇ Export</button>
+        <button id="btnImport" title="JSON-Datei laden">⬆ Import</button>
+      </span>
+      <input type="file" id="fileImport" accept=".json,application/json" hidden>
+    </div>
+  </div>
+  <nav id="nav">
+    <button data-tab="dashboard" class="active">📊 Übersicht</button>
+    <button data-tab="kanban">🗂️ Kanban-Board</button>
+    <button data-tab="anforderungen">✅ Anforderungen</button>
+    <button data-tab="zeit">⏱️ Zeiterfassung</button>
+    <button data-tab="abgabe">📅 Abgabe &amp; Präsentation</button>
+    <button data-tab="bewertung">🏅 Bewertung</button>
+    <button data-tab="technik">🛠️ Technik &amp; Links</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ ÜBERSICHT ============ -->
+  <section class="tab active" id="tab-dashboard">
+    <div class="grid g4" id="kpis"></div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>📅 Nächste Termine</h3><div id="deadlines"></div></div>
+      <div class="card"><h3>👥 Aufgabenverteilung</h3><div id="workload"></div></div>
+      <div class="card"><h3>📈 Fortschritt je Bereich</h3><div id="catProgress"></div></div>
+      <div class="card"><h3>🔥 Offene Pflicht-Aufgaben</h3><div id="openMust"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ KANBAN ============ -->
+  <section class="tab" id="tab-kanban">
+    <div class="toolbar">
+      <input type="search" id="fSearch" placeholder="Aufgaben durchsuchen …">
+      <select id="fWho"></select>
+      <select id="fCat"></select>
+      <select id="fPrio">
+        <option value="">Alle Prioritäten</option>
+        <option>Pflicht</option><option>Empfohlen</option><option>Optional</option>
+      </select>
+      <button class="primary" id="btnNewTask">＋ Neue Aufgabe</button>
+    </div>
+    <div class="board" id="board"></div>
+    <p class="muted" style="margin-top:10px">Tipp: Karten per Drag &amp; Drop zwischen Spalten verschieben · Klick auf eine Karte öffnet die Details.</p>
+  </section>
+
+  <!-- ============ ANFORDERUNGEN ============ -->
+  <section class="tab" id="tab-anforderungen">
+    <p class="muted">Alle inhaltlichen und technischen Anforderungen aus der Aufgabenstellung – gruppiert. Der Status kommt direkt vom Kanban-Board (Häkchen = „Fertig“).</p>
+    <div id="reqList"></div>
+  </section>
+
+  <!-- ============ ZEITERFASSUNG ============ -->
+  <section class="tab" id="tab-zeit">
+    <div class="hint">⚠️ <b>Pflicht für die Doku:</b> Während der Bearbeitung notieren, wie lange man für welche Aufgaben braucht – inkl. Einarbeitung, Fehlersuche und Irrwegen. Ehrlich sein! Bewertet wird nur, <i>dass</i> es gemacht wurde, nicht wie viel Zeit es war.</div>
+    <div class="card">
+      <form class="time-form" id="timeForm">
+        <label>Datum<input type="date" id="tDate" required></label>
+        <label>Person<select id="tWho"></select></label>
+        <label>Aufgabe<select id="tTask"></select></label>
+        <label>Art<select id="tKind">
+          <option>Umsetzung</option><option>Einarbeitung</option><option>Fehlersuche</option>
+          <option>Irrweg</option><option>Planung/Design</option><option>Dokumentation</option>
+          <option>Präsentation</option><option>Abstimmung</option>
+        </select></label>
+        <label>Minuten<input type="number" id="tMin" min="5" step="5" required></label>
+        <label>Notiz<input id="tNote" placeholder="Was genau? Probleme?"></label>
+        <button class="primary" type="submit">Eintragen</button>
+      </form>
+    </div>
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card"><h3>Summe je Person</h3><div id="timeByWho"></div></div>
+      <div class="card"><h3>Summe je Art der Tätigkeit</h3><div id="timeByKind"></div></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+        <h3 style="margin:0">Alle Einträge</h3>
+        <button id="btnCsv">⬇ CSV für Doku exportieren</button>
+      </div>
+      <div class="table-wrap" style="margin-top:10px"><table id="timeTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ============ ABGABE ============ -->
+  <section class="tab" id="tab-abgabe">
+    <div class="grid g2">
+      <div class="card">
+        <h3>💾 Quelltexte &amp; Dateien</h3>
+        <p><b>Späteste Abgabe: Samstag, 16.01.2027, 23:59 Uhr</b></p>
+        <ul>
+          <li>Nur die für das Projekt selbst erstellten Dateien + unmittelbar zugehörige (z.B. Bilder – bereinigt, nicht unnötig hoch aufgelöst).</li>
+          <li>Richtwert: ca. <b>10 MB</b>.</li>
+          <li>Wege: <b>GitHub-Freigabe</b> (konrad01de bzw. konrad@preiser.de) – <i>empfohlen</i>; oder Google-Drive-Freigabe (konrad01de@googlemail.com); E-Mail-Anhang nur ungern (DH-Mail verliert oft Dateien ohne Rückmeldung).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>📄 Dokumentation (PDF)</h3>
+        <p><b>Späteste Abgabe: Sonntag, 17.01.2027, 18:00 Uhr</b> – per E-Mail-Anhang.</p>
+        <ul>
+          <li>Umfang <b>10–20 Seiten</b> (Screenshots helfen).</li>
+          <li>Was wurde gemacht? Welche Techniken – wofür, und wie wirken sie zusammen?</li>
+          <li>Ordnerstruktur &amp; Ausführungsumgebung erläutern.</li>
+          <li>Aussagekräftige Screenshots (Überblick + lesbarer Ausschnitt).</li>
+          <li>Kleine Quelltext-Ausschnitte als Beleg.</li>
+          <li>Irrwege &amp; Schwierigkeiten dürfen rein.</li>
+          <li><b>Übersicht der Bearbeitungszeiten</b> nicht vergessen!</li>
+          <li>Keine Literaturarbeit nötig.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🎤 Abschlusspräsentation</h3>
+        <p><b>Prüfungsphase: 01.02.2027 – 12.02.2027</b> · Dauer ca. 1–1,5 h (~45 min pro Person)</p>
+        <p><b>Szenario:</b> Ihr wollt den Dozenten als Kunden überzeugen, euch den Auftrag zur vollständigen Entwicklung zu erteilen.</p>
+        <ol>
+          <li>Einführung (optional PowerPoint/Prezi)</li>
+          <li>Erster Gang durch die Anwendung</li>
+          <li>Einzelne Funktionen mit größerer technischer Tiefe</li>
+          <li>Fließender Übergang: gemeinsam möglichst viel Quellcode ansehen &amp; besprechen</li>
+        </ol>
+        <p class="muted">Bewährt: Vorführung auf die Doku abstimmen.</p>
+      </div>
+      <div class="card">
+        <h3>🎯 Zielsetzung (Thema)</h3>
+        <ul>
+          <li>Ski (ggf. Snowboards) inkl. Bindungen &amp; Zubehör (Stöcke, Schuhe, Helme, Protektoren …) ansprechend präsentieren.</li>
+          <li>Benutzergruppen: Anfänger / Fortgeschritten / Profi · Damen / Herren / Kinder · Carving / Touren / Telemark.</li>
+          <li>Ski-Merkmale: <b>Länge, Kurvenradius, Gewichtsbereich</b>. Stöcke: <b>Länge, Tellergröße</b>.</li>
+          <li>Ausleihzeiten anzeigen.</li>
+          <li>Pakete ggf. mit Rabatt (z.B. Ski &amp; Stöcke).</li>
+          <li>Warenkorb + Ausleihe für bestimmten Zeitraum.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BEWERTUNG ============ -->
+  <section class="tab" id="tab-bewertung">
+    <p class="muted">Bewertungskriterien laut Aufgabenstellung – zum Selbst-Check vor der Abgabe abhaken. (… und bitte KEINE Panik wegen der Bewertung! 🙂)</p>
+    <div class="card"><div id="criteria"></div></div>
+  </section>
+
+  <!-- ============ TECHNIK ============ -->
+  <section class="tab" id="tab-technik">
+    <div class="grid g2">
+      <div class="card">
+        <h3>⚙️ Technische Randbedingungen</h3>
+        <ul>
+          <li>HTTP, HTML, JavaScript/TypeScript, CSS + <b>Datenbank</b> + <b>serverseitige Programme</b>.</li>
+          <li><b>Kein CMS</b> (WordPress, Typo3, Joomla …)!</li>
+          <li>DB frei wählbar: MySQL/MariaDB, PostgreSQL oder MongoDB.</li>
+          <li>Frameworks/Sprachen/Bibliotheken weitgehend frei.</li>
+          <li>JS/TS im Client für eine angemessen umfangreiche Teilfunktion (z.B. AJAX) – Pflicht.</li>
+          <li>CSS direkt, SASS/SCSS oder Framework (Bootstrap, w3.css).</li>
+          <li>Responsiv: PC, Tablet, Smartphone (Test per DevTools reicht).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🖥️ Laufzeitumgebung</h3>
+        <ul>
+          <li>Rein lokal auf eigenem PC/Laptop (vermeidet Urheberrechtskonflikte) – oder eigener Server im LAN (z.B. Raspberry Pi).</li>
+          <li>Öffentlicher Server (z.B. AWS): rechtlich aufpassen, <code>robots.txt</code> mit <code>User-agent: * / Disallow: /</code>, nur per SSH-Tunnel zugreifen.</li>
+          <li>Server: Apache (XAMPP), Node.js + Express oder Spring Boot/Tomcat.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🧰 Software-Vorschläge</h3>
+        <ul>
+          <li><b>Node.js</b> (<a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a>) – Test: <code>node --version</code></li>
+          <li><b>Express</b> – <code>npm install express</code></li>
+          <li><b>VS Code</b> (<a href="https://code.visualstudio.com/" target="_blank" rel="noopener">code.visualstudio.com</a>)</li>
+          <li><b>XAMPP</b> (Apache, MariaDB, PHP, phpMyAdmin) – <a href="https://www.apachefriends.org/" target="_blank" rel="noopener">apachefriends.org</a>; alternativ HeidiSQL</li>
+          <li><b>Postman</b> zum Testen der API</li>
+          <li><b>Figma</b> für UI-Entwurf</li>
+          <li>W3C-Validatoren für HTML/CSS</li>
+          <li>Browser-DevTools (Strg+Shift+I, „Toggle Device Toolbar“)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>🧩 Frameworks (optional)</h3>
+        <ul>
+          <li>Bootstrap 5.3 – <a href="https://getbootstrap.com/docs/5.3/getting-started/introduction/" target="_blank" rel="noopener">Doku</a></li>
+          <li>Vue.js · Angular (TypeScript) · React</li>
+          <li>Frontend ↔ Backend typischerweise über eine <b>REST-API</b> (HTTP-Anfrage an Endpunkt, Antwort als JSON).</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>📚 Lernquellen</h3>
+        <ul>
+          <li><a href="https://www.w3schools.com/" target="_blank" rel="noopener">w3schools.com</a> – HTML, JS, HTTP, Bootstrap, Vue, Angular …</li>
+          <li>Udemy – viele kostenlose Kurse zur Web-Entwicklung</li>
+          <li><a href="https://www.w3.org/" target="_blank" rel="noopener">w3.org</a> – Standards &amp; Validatoren</li>
+          <li><a href="https://de.wikipedia.org/wiki/Representational_State_Transfer" target="_blank" rel="noopener">REST (Wikipedia)</a></li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>⚖️ Recht – Links</h3>
+        <ul>
+          <li><a href="https://www.e-recht24.de/datenschutz/6485-rechtssichere-unternehmenswebsite.html" target="_blank" rel="noopener">e-recht24: Rechtssichere Website</a></li>
+          <li><a href="https://www.ihk-muenchen.de/de/Service/Recht-und-Steuern/Internetrecht/Impressum-im-Internet/" target="_blank" rel="noopener">IHK München: Impressum</a></li>
+          <li><a href="https://register.dpma.de/DPMAregister/marke/basis" target="_blank" rel="noopener">DPMA Markenregister</a></li>
+          <li><a href="https://dr-dsgvo.de/checkliste-fuer-rechtssichere-einwilligungsabfragen-auf-webseiten/" target="_blank" rel="noopener">Checkliste Einwilligungsabfragen</a> (inkl. Google Maps!)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ MODAL: Aufgabe bearbeiten ============ -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h2 id="mTitle">Aufgabe</h2>
+    <div class="form-grid">
+      <label class="full">Titel<input id="eTitle"></label>
+      <label>Bereich<select id="eCat"></select></label>
+      <label>Priorität<select id="ePrio"><option>Pflicht</option><option>Empfohlen</option><option>Optional</option></select></label>
+      <label>Zuständig<select id="eWho"></select></label>
+      <label>Status<select id="eStatus"></select></label>
+      <label>Fällig am<input type="date" id="eDue"></label>
+      <label>Geschätzt (Std.)<input type="number" id="eEst" min="0" step="0.5"></label>
+      <label class="full">Beschreibung / Anforderung<textarea id="eDesc"></textarea></label>
+      <label class="full">Notizen (Umsetzungsideen, Probleme …)<textarea id="eNotes"></textarea></label>
+    </div>
+    <div class="modal-actions">
+      <button class="danger" id="mDelete">Löschen</button>
+      <span class="spacer"></span>
+      <button id="mCancel">Abbrechen</button>
+      <button class="primary" id="mSave">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================================
+   Konfiguration & Startdaten
+   ===================================================================== */
+const STORAGE_KEY = 'webprog-skiverleih-dashboard-v1';
+
+const STATUSES = [
+  { id: 'backlog', label: '📥 Backlog' },
+  { id: 'todo',    label: '📌 To Do' },
+  { id: 'doing',   label: '🚧 In Arbeit' },
+  { id: 'review',  label: '🔍 Review / Test' },
+  { id: 'done',    label: '✅ Fertig' },
+];
+
+const CATEGORIES = {
+  'Organisation':       '#34495e',
+  'Backend & DB':       '#1f5fa8',
+  'Kernfunktionen':     '#16a085',
+  'Benutzer & Rollen':  '#2980b9',
+  'Preise & Buchung':   '#d35400',
+  'Web-Techniken':      '#8e44ad',
+  'Recht':              '#7f8c8d',
+  'Qualität & Design':  '#27ae60',
+  'KI & Extras':        '#c0392b',
+  'Abgabe & Doku':      '#b7950b',
+};
+
+const DEADLINES = [
+  { date: '2027-01-16T23:59', label: 'Abgabe Quelltexte & Dateien' },
+  { date: '2027-01-17T18:00', label: 'Abgabe Dokumentation (PDF)' },
+  { date: '2027-02-01T08:00', label: 'Beginn Prüfungsphase / Präsentationen' },
+  { date: '2027-02-12T18:00', label: 'Ende Prüfungsphase' },
+];
+
+const CRITERIA = [
+  'Gesamteindruck', 'Relativer Wissenszuwachs', 'Ordentliche Dokumentation',
+  'Überzeugendes Aussehen (auch andere Bildschirmgrößen / Endgeräte)',
+  'Logischer Aufbau des Angebotes', 'Sinnvolle, übersichtlich bedienbare Seiten',
+  'Gesamtfunktionalität und -umfang', 'Technisches Anspruchsniveau',
+  'Passender, angemessen tiefgehender Einsatz der Techniken',
+  'Anwendung möglichst vieler der vorgeschlagenen Techniken',
+  'Gelungener Vortrag, überzeugende Antworten auf Fragen',
+  'Ausgewogene Aufteilung der Arbeit & des Vortrags auf beide',
+  'Sauberer Aufbau der Ordner und Dateien', 'Sinnvoll benannte Dateinamen',
+  'Gut formatierte und kommentierte Quelltexte',
+  'Keine hart-kodierten Seiteninhalte, keine Redundanzen (auch in Programmkonstrukten)',
+];
+
+// Kompakte Startliste: [Bereich, Priorität, Titel, Beschreibung]
+const SEED = [
+  ['Organisation', 'Pflicht', 'Tech-Stack festlegen', 'Server (Node.js/Express, PHP/XAMPP, Spring Boot), Datenbank (MariaDB, PostgreSQL, MongoDB), CSS-Framework (Bootstrap/w3.css), ggf. Frontend-Framework (Vue/React/Angular). Kein CMS!'],
+  ['Organisation', 'Pflicht', 'Git-Repo & Ordnerstruktur anlegen', 'Saubere Ordnerstruktur, sinnvolle Dateinamen. GitHub-Repo für Abgabe mit Freigabe für konrad01de.'],
+  ['Organisation', 'Empfohlen', 'UI-Entwurf / Wireframes (z.B. Figma)', 'Seitenstruktur, Navigation, Startseite, Katalog, Detailseite, Warenkorb, Konto.'],
+  ['Organisation', 'Pflicht', 'Arbeitsaufteilung festlegen', 'Ausgewogene Aufteilung auf beide Gruppenmitglieder (wird bewertet!).'],
+
+  ['Backend & DB', 'Pflicht', 'Datenmodell / ER-Diagramm', 'Artikel (Ski, Snowboard, Stöcke, Schuhe, Helme, Protektoren), Kategorien, Benutzer, Familienmitglieder, Buchungen, Pakete, Standorte, Preise.'],
+  ['Backend & DB', 'Pflicht', 'Datenbank aufsetzen + Testdaten', 'Schema anlegen und realistische Beispieldaten einspielen (Inhalte aus der DB, nicht hart-kodiert).'],
+  ['Backend & DB', 'Pflicht', 'REST-API (Server-Endpunkte)', 'Endpunkte für Artikel, Verfügbarkeit, Warenkorb, Buchungen, Benutzer. Mit Postman testen.'],
+  ['Backend & DB', 'Pflicht', 'Login / Logout / Sessions', 'Anmeldung mit wahrnehmbarem Mehrwert (Buchung, Auswahl nach Gewicht, Können, Bindungseinstellung).'],
+
+  ['Kernfunktionen', 'Pflicht', 'Artikelkatalog ansprechend präsentieren', 'Ski (ggf. Snowboards) inkl. Bindungen sowie Zubehör: Stöcke, Schuhe, Helme, Protektoren u.a.'],
+  ['Kernfunktionen', 'Pflicht', 'Benutzergruppen unterscheiden', 'Anfänger / Fortgeschritten / Profi · Damen / Herren / Kinder · Carving- / Touren- / Telemark-Ski.'],
+  ['Kernfunktionen', 'Pflicht', 'Wichtige Merkmale anzeigen', 'Ski: Länge, Kurvenradius, Gewichtsbereich des Benutzers. Stöcke: Länge, Tellergröße.'],
+  ['Kernfunktionen', 'Pflicht', 'Ausleihzeiten / Verfügbarkeit anzeigen', 'Wann ist welcher Artikel verfügbar bzw. verliehen?'],
+  ['Kernfunktionen', 'Pflicht', 'Warenkorb', 'Ski und Zubehör in den Warenkorb legen.'],
+  ['Kernfunktionen', 'Pflicht', 'Ausleihe für Zeitraum buchen', 'Buchung des Warenkorbs für einen bestimmten Zeitraum.'],
+  ['Kernfunktionen', 'Empfohlen', 'Pakete mit Rabatt', 'z.B. Ski & Stöcke, Komplettpaket mit Schuhen und Helm.'],
+  ['Kernfunktionen', 'Optional', 'Suche mit Filtern & Freitext', 'Hersteller, Artikelname, Kategorie, Profil (m/w; Kind, Jugendlicher, Erwachsener, Senior), Befähigung; Min/Max für Preis, Größe, Gewichtsklasse.'],
+  ['Kernfunktionen', 'Optional', 'Merkliste (auch ohne Login via Cookie)', 'Vorausgewählte Skisachen merken.'],
+  ['Kernfunktionen', 'Optional', 'Abholstandort wählen', 'Mehrere Standorte im Skigebiet – passt gut zu Google Maps.'],
+
+  ['Benutzer & Rollen', 'Pflicht', 'Registrierung mit Familie', 'Zusammen mit zugehörigen Personen (Partner, Kinder) registrieren; Daten wie Körpergewicht, Können, Bindungseinstellungen erfassen.'],
+  ['Benutzer & Rollen', 'Optional', 'Rollen: Kunde / Verkaufsberater / Admin', 'Admin vergibt/entzieht Verwalterrechte an Verkaufsberater. Ggf. einfache vs. gehobene Mitarbeiter.'],
+  ['Benutzer & Rollen', 'Optional', 'Ausgabe mit Bar-/QR-Code / RFID + Rechnung', 'Verkaufsberater bucht Gegenstände am Ende des Ausleihvorgangs auf das Konto der Familie und hinterlegt die Rechnung.'],
+  ['Benutzer & Rollen', 'Optional', 'Selbstregistrierung + E-Mail-Bestätigung', 'Absicherung der Registrierung per Bestätigungs-Mail.'],
+  ['Benutzer & Rollen', 'Optional', 'Passwort vergessen / zurücksetzen', ''],
+  ['Benutzer & Rollen', 'Optional', 'Eigene Daten pflegen', 'Profil und Familienmitglieder aktualisieren.'],
+  ['Benutzer & Rollen', 'Optional', 'Artikelverwaltung (CRUD) für Mitarbeiter', 'Berechtigte Verkaufsberater können Skisachen anlegen, ändern, löschen.'],
+
+  ['Preise & Buchung', 'Optional', 'Variable Preise nach Buchungsdauer', ''],
+  ['Preise & Buchung', 'Optional', 'Variable Preise nach Saison', 'Neben-/Hauptsaison.'],
+  ['Preise & Buchung', 'Optional', 'Stornokosten bei Vorausbuchung', ''],
+  ['Preise & Buchung', 'Optional', 'Versicherungen', 'Bruch- & Diebstahlschutz (versch. Selbstbeteiligung), Bergrettung, Haftpflicht, Rücktrittsversicherung.'],
+  ['Preise & Buchung', 'Optional', 'Kaution variabler Höhe', ''],
+  ['Preise & Buchung', 'Optional', 'Statistikfunktionen', 'Buchungsgrad der Skitypen, Anteile/Anzahl Benutzer je Gruppe (gut mit Canvas kombinierbar).'],
+
+  ['Web-Techniken', 'Pflicht', 'AJAX mit Live-Aktualisierung', 'Seite wird nach dem Laden ständig aktualisiert (Polling → besser: erst prüfen ob neu → am besten WebSockets). Z.B. Verfügbarkeitsübersicht, die sich bei Buchung/Änderung aktualisiert.'],
+  ['Web-Techniken', 'Pflicht', 'Clientseitiges JavaScript (umfangreiche Teilfunktion)', 'Mindestens eine angemessen umfangreiche Funktion im Browser.'],
+  ['Web-Techniken', 'Empfohlen', 'Cookies bewusst setzen', 'Eigene Cookies mit unterschiedlicher Lebensdauer (zusätzlich zu automatischen). Zugriff serverseitig und per JS.'],
+  ['Web-Techniken', 'Empfohlen', 'LocalStorage im Vergleich', 'Beispielhaft einsetzen und Unterschied zu Cookies erklären können.'],
+  ['Web-Techniken', 'Empfohlen', 'Google Maps (iFrame) + Zusatzfunktion', 'Lage der Verleihstandorte anzeigen, ggf. Standort wählen. Einwilligung (DSGVO) beachten!'],
+  ['Web-Techniken', 'Optional', 'Superlogout-Trick (mehrere Logouts per iFrames)', 'Vgl. superlogout.com.'],
+  ['Web-Techniken', 'Empfohlen', 'MathML einsetzen', 'z.B. Benutzerverifizierung (Rechen-Captcha) oder Zeitvertreib bei Regen.'],
+  ['Web-Techniken', 'Empfohlen', 'SVG-Grafik (mit SVG-Besonderheiten)', 'z.B. interaktive Ski-Skizze mit Radius/Taillierung, Pistenkarte, Animation.'],
+  ['Web-Techniken', 'Empfohlen', 'Canvas-Grafik', 'z.B. Statistik-Diagramm, Größen-/Längenrechner.'],
+  ['Web-Techniken', 'Empfohlen', 'Serverseitige Bildskalierung', 'Bilder automatisch auf dem Server skalieren (z.B. sharp in Node, GD in PHP).'],
+  ['Web-Techniken', 'Empfohlen', 'Serverseitig erzeugtes/bearbeitetes Bild (jpg)', 'z.B. Wasserzeichen, Copyright-Text oder Captcha-Bild.'],
+
+  ['Recht', 'Empfohlen', 'Impressum', 'Inkl. USt-IdNr., ggf. Pflichtangaben je Rechtsform.'],
+  ['Recht', 'Empfohlen', 'Datenschutzerklärung (DSGVO)', 'Inkl. Hinweis auf Google-Dienste (Maps).'],
+  ['Recht', 'Empfohlen', 'Cookie-Einwilligung', 'Rechtssichere Einwilligungsabfrage.'],
+  ['Recht', 'Empfohlen', 'AGB & Widerrufsbelehrung', 'Für den Shop/Verleih.'],
+  ['Recht', 'Empfohlen', 'Schlichtungsplattform & Haftungsausschluss', 'Hinweis auf OS-Plattform, Distanzierung von Inhalten anderer Anbieter.'],
+  ['Recht', 'Optional', 'robots.txt (nur bei öffentlichem Server)', 'User-agent: * / Disallow: /'],
+
+  ['Qualität & Design', 'Pflicht', 'Responsives Design', 'PC, Tablet, Smartphone – mit DevTools testen.'],
+  ['Qualität & Design', 'Pflicht', 'Code formatieren & kommentieren', ''],
+  ['Qualität & Design', 'Pflicht', 'Redundanzen entfernen', 'Keine hart-kodierten Inhalte, wiederverwendbare Komponenten/Templates.'],
+  ['Qualität & Design', 'Empfohlen', 'HTML/CSS mit W3C-Validator prüfen', ''],
+
+  ['KI & Extras', 'Optional', 'KI: Ski-/Tourenempfehlung', 'Abhängig von Wetter, Schnee, Fähigkeiten – kombiniert mit DB-Abfrage verfügbarer Modelle.'],
+  ['KI & Extras', 'Optional', 'KI: Versicherungs-Check', 'Vorhandene Versicherungen hochladen → sinnvolle Empfehlungen ableiten.'],
+  ['KI & Extras', 'Optional', 'KI: Bindungseinstellung per Foto', 'Computer-Vision aus Fotos von Füßen/Skischuhen.'],
+  ['KI & Extras', 'Optional', 'Eigene kreative Idee', 'Seid kreativ! 🙂'],
+
+  ['Abgabe & Doku', 'Pflicht', 'Zeiterfassung laufend führen', 'Inkl. Einarbeitung, Fehlersuche, Irrwege (Tab „Zeiterfassung“).', '2027-01-17'],
+  ['Abgabe & Doku', 'Pflicht', 'Quelltexte bereinigen & abgeben', 'Bilder verkleinern, ~10 MB, GitHub-Freigabe.', '2027-01-16'],
+  ['Abgabe & Doku', 'Pflicht', 'Dokumentation schreiben (PDF, 10–20 S.)', 'Was, welche Techniken & Zusammenwirken, Ordnerstruktur, Umgebung, Screenshots, Code-Ausschnitte, Irrwege, Zeitübersicht.', '2027-01-17'],
+  ['Abgabe & Doku', 'Empfohlen', 'Screenshots für Doku erstellen', 'Je Technik: Überblick + lesbarer Ausschnitt.', '2027-01-15'],
+  ['Abgabe & Doku', 'Pflicht', 'Präsentation vorbereiten', 'Einführung (PPT/Prezi), Rundgang, Funktionen in Tiefe, Code-Walkthrough. Auf Doku abstimmen.', '2027-01-31'],
+  ['Abgabe & Doku', 'Empfohlen', 'Probedurchlauf Präsentation', 'Redeanteile ausgewogen verteilen (~45 min pro Person), Fragen antizipieren.', '2027-01-31'],
+];
+
+function seedState() {
+  return {
+    team: { a: 'Person A', b: 'Person B' },
+    tasks: SEED.map(([cat, prio, title, desc, due], i) => ({
+      id: 't' + (i + 1), cat, prio, title, desc, due: due || '',
+      who: '', status: prio === 'Optional' ? 'backlog' : 'todo', est: '', notes: '',
+    })),
+    time: [],
+    criteria: {},
+  };
+}
+
+/* =====================================================================
+   State-Verwaltung (LocalStorage)
+   ===================================================================== */
+let state;
+try { state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || seedState(); }
+catch { state = seedState(); }
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); render(); }
+
+/* =====================================================================
+   Hilfsfunktionen
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const whoName = w => w === 'a' ? state.team.a : w === 'b' ? state.team.b : w === 'both' ? 'Beide' : 'Nicht zugewiesen';
+const initials = w => w === 'both' ? 'A+B' : w ? (whoName(w).trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase() || '?') : '–';
+const whoBadge = w => `<span class="who who-${w || 'none'}" title="${esc(whoName(w))}">${esc(initials(w))}</span>`;
+const fmtDate = d => d ? new Date(d).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+const fmtMin = m => `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+const today = () => new Date().toISOString().slice(0, 10);
+const daysUntil = d => Math.ceil((new Date(d) - new Date()) / 86400000);
+const barRow = (name, value, max, label, color) =>
+  `<div class="row"><span class="name" title="${esc(name)}">${esc(name)}</span>
+   <div class="bar"><span style="width:${max ? Math.round(value / max * 100) : 0}%;${color ? 'background:' + color : ''}"></span></div>
+   <span class="num">${label}</span></div>`;
+const options = (list, selected) => list.map(([v, l]) => `<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(l)}</option>`).join('');
+const whoOptions = (sel, withAll) => options([
+  ...(withAll ? [['*', 'Alle Personen']] : []),
+  ['a', state.team.a], ['b', state.team.b], ['both', 'Beide'], ['', 'Nicht zugewiesen'],
+], sel);
+
+/* =====================================================================
+   Rendering
+   ===================================================================== */
+function render() {
+  $('nameA').value = state.team.a;
+  $('nameB').value = state.team.b;
+  renderDashboard();
+  renderBoard();
+  renderRequirements();
+  renderTime();
+  renderCriteria();
+}
+
+function renderDashboard() {
+  const t = state.tasks;
+  const done = t.filter(x => x.status === 'done').length;
+  const must = t.filter(x => x.prio === 'Pflicht');
+  const mustDone = must.filter(x => x.status === 'done').length;
+  const minutes = state.time.reduce((s, e) => s + e.min, 0);
+  const next = DEADLINES.find(d => new Date(d.date) > new Date());
+  const nd = next ? daysUntil(next.date) : null;
+  $('kpis').innerHTML = `
+    <div class="card kpi"><div class="lbl">Gesamtfortschritt</div><div class="val">${Math.round(done / t.length * 100) || 0}%</div><div class="muted">${done} von ${t.length} Aufgaben</div></div>
+    <div class="card kpi"><div class="lbl">Pflicht-Aufgaben</div><div class="val">${mustDone}/${must.length}</div><div class="bar" style="margin-top:6px"><span style="width:${must.length ? mustDone / must.length * 100 : 0}%;background:var(--pflicht)"></span></div></div>
+    <div class="card kpi ${nd !== null && nd < 14 ? 'warn' : ''}"><div class="lbl">Nächste Frist</div><div class="val">${nd !== null ? nd + ' Tage' : '–'}</div><div class="muted">${next ? esc(next.label) : 'Alles vorbei 🎉'}</div></div>
+    <div class="card kpi"><div class="lbl">Erfasste Zeit</div><div class="val">${fmtMin(minutes)}</div><div class="muted">${state.time.length} Einträge</div></div>`;
+
+  $('deadlines').innerHTML = DEADLINES.map(d => {
+    const n = daysUntil(d.date);
+    return `<div class="deadline ${n >= 0 && n < 14 ? 'soon' : ''}"><span class="date">${fmtDate(d.date)}</span><span>${esc(d.label)}</span>
+      <span class="left">${n < 0 ? 'vorbei' : n === 0 ? 'heute!' : 'noch ' + n + ' T.'}</span></div>`;
+  }).join('');
+
+  const people = ['a', 'b', 'both', ''];
+  const maxCount = Math.max(1, ...people.map(p => t.filter(x => x.who === p).length));
+  $('workload').innerHTML = people.map(p => {
+    const mine = t.filter(x => x.who === p);
+    const d = mine.filter(x => x.status === 'done').length;
+    const color = p === 'a' ? 'var(--a)' : p === 'b' ? 'var(--b)' : p === 'both' ? 'var(--both)' : '#b6c0cc';
+    return barRow(whoName(p), mine.length, maxCount, `${d}/${mine.length}`, color);
+  }).join('') + `<p class="muted" style="margin-bottom:0">Balken = Anzahl zugewiesener Aufgaben · Zahl = davon fertig</p>`;
+
+  $('catProgress').innerHTML = Object.entries(CATEGORIES).map(([cat, color]) => {
+    const c = t.filter(x => x.cat === cat);
+    const d = c.filter(x => x.status === 'done').length;
+    return c.length ? barRow(cat, d, c.length, `${d}/${c.length}`, color) : '';
+  }).join('');
+
+  const open = must.filter(x => x.status !== 'done');
+  $('openMust').innerHTML = open.length
+    ? open.map(x => `<div class="row" style="cursor:pointer" data-open="${x.id}">${whoBadge(x.who)}<span style="flex:1">${esc(x.title)}</span><span class="muted">${STATUSES.find(s => s.id === x.status).label}</span></div>`).join('')
+    : '<p class="muted">Alle Pflicht-Aufgaben erledigt 🎉</p>';
+}
+
+function renderBoard() {
+  const q = $('fSearch').value.toLowerCase();
+  const fw = $('fWho').value, fc = $('fCat').value, fp = $('fPrio').value;
+  const visible = state.tasks.filter(x =>
+    (!q || (x.title + ' ' + x.desc + ' ' + x.notes).toLowerCase().includes(q)) &&
+    (fw === '*' || x.who === fw) && (!fc || x.cat === fc) && (!fp || x.prio === fp));
+
+  $('board').innerHTML = STATUSES.map(s => {
+    const items = visible.filter(x => x.status === s.id);
+    return `<div class="col" data-status="${s.id}">
+      <div class="col-head"><span>${s.label}</span><span class="count">${items.length}</span></div>
+      <div class="col-body">${items.map(taskCard).join('')}</div>
+      <button class="add-inline" data-add="${s.id}">＋ Aufgabe</button></div>`;
+  }).join('');
+}
+
+function taskCard(x) {
+  const late = x.due && x.status !== 'done' && x.due < today();
+  return `<div class="task" draggable="true" data-id="${x.id}" style="--c:${CATEGORIES[x.cat] || '#999'}">
+    <div class="t">${esc(x.title)}</div>
+    <div class="meta"><span class="cat">${esc(x.cat)}</span><span class="badge p-${x.prio}">${x.prio}</span>
+      ${x.due ? `<span class="due ${late ? 'late' : ''}">📅 ${fmtDate(x.due)}</span>` : '<span class="due"></span>'}
+      ${whoBadge(x.who)}</div></div>`;
+}
+
+function renderRequirements() {
+  $('reqList').innerHTML = Object.keys(CATEGORIES).map(cat => {
+    const items = state.tasks.filter(x => x.cat === cat);
+    if (!items.length) return '';
+    const d = items.filter(x => x.status === 'done').length;
+    return `<details open><summary><span style="color:${CATEGORIES[cat]}">● ${esc(cat)}</span><span class="muted" style="margin-left:auto">${d}/${items.length}</span></summary>
+      <div class="inner">${items.map(x => `
+        <div class="check ${x.status === 'done' ? 'done' : ''}">
+          <input type="checkbox" data-toggle="${x.id}" ${x.status === 'done' ? 'checked' : ''}>
+          <div style="flex:1"><span class="txt"><b>${esc(x.title)}</b></span> <span class="badge p-${x.prio}">${x.prio}</span>
+            ${x.desc ? `<div class="muted">${esc(x.desc)}</div>` : ''}</div>
+          ${whoBadge(x.who)}
+        </div>`).join('')}</div></details>`;
+  }).join('');
+}
+
+function renderTime() {
+  $('tWho').innerHTML = options([['a', state.team.a], ['b', state.team.b], ['both', 'Beide']], $('tWho').value || 'a');
+  const prevTask = $('tTask').value;
+  $('tTask').innerHTML = '<option value="">– Allgemein –</option>' +
+    Object.keys(CATEGORIES).map(cat => `<optgroup label="${esc(cat)}">${
+      state.tasks.filter(x => x.cat === cat).map(x => `<option value="${x.id}">${esc(x.title)}</option>`).join('')}</optgroup>`).join('');
+  $('tTask').value = prevTask;
+  if (!$('tDate').value) $('tDate').value = today();
+
+  const sumBy = key => state.time.reduce((m, e) => (m[key(e)] = (m[key(e)] || 0) + e.min, m), {});
+  const draw = (obj, nameFn, colorFn) => {
+    const entries = Object.entries(obj).sort((a, b) => b[1] - a[1]);
+    const max = Math.max(1, ...entries.map(e => e[1]));
+    return entries.length ? entries.map(([k, v]) => barRow(nameFn(k), v, max, fmtMin(v), colorFn && colorFn(k))).join('') : '<p class="muted">Noch keine Einträge.</p>';
+  };
+  $('timeByWho').innerHTML = draw(sumBy(e => e.who), whoName, k => `var(--${k})`);
+  $('timeByKind').innerHTML = draw(sumBy(e => e.kind), k => k);
+
+  const rows = [...state.time].sort((a, b) => b.date.localeCompare(a.date));
+  $('timeTable').innerHTML = `<tr><th>Datum</th><th>Person</th><th>Aufgabe</th><th>Art</th><th>Dauer</th><th>Notiz</th><th></th></tr>` +
+    (rows.length ? rows.map(e => `<tr><td>${fmtDate(e.date)}</td><td>${whoBadge(e.who)} ${esc(whoName(e.who))}</td>
+      <td>${esc(taskTitle(e.task))}</td><td>${esc(e.kind)}</td><td>${fmtMin(e.min)}</td><td>${esc(e.note)}</td>
+      <td><button class="danger" data-deltime="${e.id}" title="Eintrag löschen">✕</button></td></tr>`).join('')
+      : '<tr><td colspan="7" class="muted">Noch keine Zeiten erfasst.</td></tr>');
+}
+
+const taskTitle = id => (state.tasks.find(x => x.id === id) || {}).title || 'Allgemein';
+
+function renderCriteria() {
+  $('criteria').innerHTML = CRITERIA.map((c, i) => `
+    <label class="check ${state.criteria[i] ? 'done' : ''}"><input type="checkbox" data-crit="${i}" ${state.criteria[i] ? 'checked' : ''}><span class="txt">${esc(c)}</span></label>`).join('');
+}
+
+/* =====================================================================
+   Modal: Aufgabe anlegen / bearbeiten
+   ===================================================================== */
+let editingId = null;
+
+function openTask(id, status) {
+  const x = state.tasks.find(t => t.id === id) ||
+    { title: '', cat: 'Organisation', prio: 'Empfohlen', who: '', status: status || 'todo', due: '', est: '', desc: '', notes: '' };
+  editingId = id || null;
+  $('mTitle').textContent = id ? 'Aufgabe bearbeiten' : 'Neue Aufgabe';
+  $('eTitle').value = x.title;
+  $('eCat').innerHTML = options(Object.keys(CATEGORIES).map(c => [c, c]), x.cat);
+  $('ePrio').value = x.prio;
+  $('eWho').innerHTML = whoOptions(x.who);
+  $('eStatus').innerHTML = options(STATUSES.map(s => [s.id, s.label]), x.status);
+  $('eDue').value = x.due; $('eEst').value = x.est; $('eDesc').value = x.desc; $('eNotes').value = x.notes;
+  $('mDelete').style.display = id ? '' : 'none';
+  $('modalBg').classList.add('open');
+  $('eTitle').focus();
+}
+
+function closeModal() { $('modalBg').classList.remove('open'); }
+
+$('mSave').onclick = () => {
+  const data = {
+    title: $('eTitle').value.trim() || 'Ohne Titel', cat: $('eCat').value, prio: $('ePrio').value,
+    who: $('eWho').value, status: $('eStatus').value, due: $('eDue').value, est: $('eEst').value,
+    desc: $('eDesc').value, notes: $('eNotes').value,
+  };
+  if (editingId) Object.assign(state.tasks.find(t => t.id === editingId), data);
+  else state.tasks.push({ id: 't' + Date.now(), ...data });
+  closeModal(); save();
+};
+$('mDelete').onclick = () => {
+  if (!confirm('Aufgabe wirklich löschen?')) return;
+  state.tasks = state.tasks.filter(t => t.id !== editingId);
+  closeModal(); save();
+};
+$('mCancel').onclick = closeModal;
+$('modalBg').onclick = e => { if (e.target === $('modalBg')) closeModal(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* =====================================================================
+   Events
+   ===================================================================== */
+// Tabs
+$('nav').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  document.querySelectorAll('nav button').forEach(n => n.classList.toggle('active', n === b));
+  document.querySelectorAll('section.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + b.dataset.tab));
+  localStorage.setItem(STORAGE_KEY + '-tab', b.dataset.tab);
+};
+const lastTab = localStorage.getItem(STORAGE_KEY + '-tab');
+if (lastTab) document.querySelector(`nav button[data-tab="${lastTab}"]`)?.click();
+
+// Teamnamen
+['a', 'b'].forEach(k => $('name' + k.toUpperCase()).addEventListener('change', e => { state.team[k] = e.target.value.trim() || 'Person ' + k.toUpperCase(); save(); }));
+
+// Filter
+$('fWho').innerHTML = whoOptions('*', true);
+$('fCat').innerHTML = '<option value="">Alle Bereiche</option>' + options(Object.keys(CATEGORIES).map(c => [c, c]));
+['fSearch', 'fWho', 'fCat', 'fPrio'].forEach(id => $(id).addEventListener('input', renderBoard));
+$('btnNewTask').onclick = () => openTask(null);
+
+// Klicks (delegiert)
+document.addEventListener('click', e => {
+  const card = e.target.closest('.task, [data-open]');
+  if (card) return openTask(card.dataset.id || card.dataset.open);
+  const add = e.target.closest('[data-add]');
+  if (add) return openTask(null, add.dataset.add);
+  const del = e.target.closest('[data-deltime]');
+  if (del && confirm('Zeiteintrag löschen?')) { state.time = state.time.filter(t => t.id !== del.dataset.deltime); save(); }
+});
+document.addEventListener('change', e => {
+  if (e.target.dataset.toggle) {
+    const x = state.tasks.find(t => t.id === e.target.dataset.toggle);
+    x.status = e.target.checked ? 'done' : 'todo'; save();
+  } else if (e.target.dataset.crit !== undefined) {
+    state.criteria[e.target.dataset.crit] = e.target.checked; save();
+  }
+});
+
+// Drag & Drop im Kanban
+let dragId = null;
+$('board').addEventListener('dragstart', e => {
+  const t = e.target.closest('.task'); if (!t) return;
+  dragId = t.dataset.id; t.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move';
+});
+$('board').addEventListener('dragend', e => e.target.closest('.task')?.classList.remove('dragging'));
+$('board').addEventListener('dragover', e => {
+  const col = e.target.closest('.col'); if (!col) return;
+  e.preventDefault();
+  document.querySelectorAll('.col.over').forEach(c => c !== col && c.classList.remove('over'));
+  col.classList.add('over');
+});
+$('board').addEventListener('dragleave', e => { const col = e.target.closest('.col'); if (col && !col.contains(e.relatedTarget)) col.classList.remove('over'); });
+$('board').addEventListener('drop', e => {
+  const col = e.target.closest('.col'); if (!col || !dragId) return;
+  e.preventDefault();
+  state.tasks.find(t => t.id === dragId).status = col.dataset.status;
+  dragId = null; save();
+});
+
+// Zeiterfassung
+$('timeForm').onsubmit = e => {
+  e.preventDefault();
+  state.time.push({ id: 'z' + Date.now(), date: $('tDate').value, who: $('tWho').value, task: $('tTask').value,
+    kind: $('tKind').value, min: parseInt($('tMin').value, 10) || 0, note: $('tNote').value.trim() });
+  $('tMin').value = ''; $('tNote').value = '';
+  save();
+};
+$('btnCsv').onclick = () => {
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lines = [['Datum', 'Person', 'Bereich', 'Aufgabe', 'Art', 'Minuten', 'Notiz'].join(';'),
+    ...state.time.map(e => [e.date, whoName(e.who), (state.tasks.find(t => t.id === e.task) || {}).cat || '', taskTitle(e.task), e.kind, e.min, e.note].map(q).join(';'))];
+  download('Zeiterfassung.csv', '\uFEFF' + lines.join('\r\n'), 'text/csv');
+};
+
+// Export / Import (zum Teilen zwischen beiden Teammitgliedern)
+function download(name, content, type) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type }));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+}
+$('btnExport').onclick = () => download(`Projektstand_${today()}.json`, JSON.stringify(state, null, 2), 'application/json');
+$('btnImport').onclick = () => $('fileImport').click();
+$('fileImport').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  try {
+    const data = JSON.parse(await f.text());
+    if (!Array.isArray(data.tasks)) throw new Error('Ungültige Datei');
+    if (confirm('Aktuellen Stand durch die importierte Datei ersetzen?')) { state = data; save(); }
+  } catch (err) { alert('Import fehlgeschlagen: ' + err.message); }
+  e.target.value = '';
+};
+
+render();
+</script>
+</body>
+</html>
